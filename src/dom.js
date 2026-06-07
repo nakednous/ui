@@ -90,6 +90,22 @@ export function createLabel(text) {
   return l;
 }
 
+/**
+ * Clickable tab label (span) for the param-panel tab strip.
+ * Style is theme-neutral: inherits color; the active marker is applied by the
+ * caller (font-weight + border-bottom in currentColor), so theme re-coloring
+ * carries automatically.
+ * @param {string} label
+ * @param {Function} [onClick]
+ */
+export function createTab(label, onClick) {
+  const t = _el('span', 'tab');
+  t.textContent = label;
+  t.style.cssText = 'cursor:pointer;user-select:none;padding:0 6px 2px;border-bottom:2px solid transparent;';
+  if (onClick) t.addEventListener('click', onClick);
+  return t;
+}
+
 // ── Color helpers (no p5 dependency) ────────────────────────────────────────
 
 /** '#rrggbb' -> [r, g, b, a] normalised 0-1 */

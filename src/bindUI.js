@@ -57,12 +57,36 @@
  *   string value       → 'color'
  *   number / default   → 'float'
  *
+ * Each entry may also carry an optional `tab: 'name'` (string).  Controls
+ * sharing a tab name are grouped under that tab; controls without a tab are
+ * tab-independent and always visible.  When no entry declares a tab, no tab
+ * strip is rendered and behaviour is identical to an untabbed panel.
+ *
+ * ---------------------------------------------------------------------------
+ * Tabbed grouping (optional)
+ * ---------------------------------------------------------------------------
+ * If any binding declares `tab`, a themed tab strip is inserted at the top of
+ * the body.  Only the active tab's controls are shown (ANDed with each
+ * control's own .visible and the panel-wide visibility).  Controls in inactive
+ * tabs keep holding and reporting their values — value(), set(), and tick()
+ * are unaffected by which tab is active, so the host draw() never changes.
+ *
+ * The strip inherits color from the container (currentColor); the active tab
+ * is marked with bold weight + a currentColor bottom border, so theme
+ * re-coloring carries automatically.
+ *
+ * Runtime show/hide of individual tabs is intentionally NOT a library concern
+ * (it couples a tab to other controls' values — application logic); drive it
+ * from the host via ui.tab / ui.tabs plus the p5t-tab button class.
+ *
  * ---------------------------------------------------------------------------
  * Returned API
  * ---------------------------------------------------------------------------
  *   ui.el                       HTMLElement (container)
  *   ui.visible        get/set   boolean — whole panel visibility
  *   ui.collapsed      get/set   boolean — body visibility (requires collapsible+title)
+ *   ui.tab            get/set   string  — active tab name (set re-applies visibility)
+ *   ui.tabs           get       string[] — tab names, first-appearance order (copy)
  *   ui[name].visible  get/set   boolean — per-binding visibility
  *   ui[name].value()            current bound value
  *   ui[name].set(v)             set programmatically (marks dirty → pushed on next tick)
@@ -80,7 +104,7 @@
 import {
   createContainer, createSlider, createButton,
   createCheckbox, createSelect, createColorPicker,
-  createLabel, hexToVec4, vec4ToHex, setVisible, mount
+  createLabel, createTab, hexToVec4, vec4ToHex, setVisible, mount
 } from './dom.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -123,6 +147,7 @@ function inferType(cfg) {
  * @param {string}  [opt.title]          Bold title row.
  * @param {boolean} [opt.collapsible]    Make title row a collapse toggle (requires title).
  * @param {boolean} [opt.collapsed]      Start collapsed (requires collapsible + title).
+ * @param {string}  [opt.tab]            Initial active tab (defaults to first tab declared).
  * @param {HTMLElement} [opt.parent]     Mount target (defaults to document.body).
  * @returns {Object} Panel handle — see "Returned API" above.
  */
@@ -134,6 +159,9 @@ export function createUI(schema, opt) {
   const _order      = Object.keys(schema);
   const _defaults   = {};
   const _labels     = {};
+  const _tabOf      = {};
+  const _tabs       = [];
+  const _tabEls     = {};
   const _w          = opt.width  ?? 120;
   const _off        = opt.offset ?? 6;
   const _showLabels = !!opt.labels;
@@ -210,13 +238,29 @@ export function createUI(schema, opt) {
     return c;
   }
 
+  function _tabMatch(name) {
+    return !_tabOf[name] || _tabOf[name] === _activeTab;
+  }
+
   function applyControlVis(name) {
     const c = ui[name];
     if (!c) return;
-    const show = _vis && c._vis;
+    const show = _vis && c._vis && _tabMatch(name);
     const els  = isArr(c.el) ? c.el : [c.el];
     els.forEach(e => setVisible(e, show));
     _labels[name] && setVisible(_labels[name], show);
+  }
+
+  function _applyTabs() {
+    _tabs.forEach(tab => {
+      const t = _tabEls[tab];
+      if (!t) return;
+      const active = tab === _activeTab;
+      t.classList.toggle('p5t-tab-active', active);
+      t.style.fontWeight        = active ? 'bold' : 'normal';
+      t.style.borderBottomColor = active ? 'currentColor' : 'transparent';
+    });
+    _order.forEach(applyControlVis);
   }
 
   function buildControl(name, cfg) {
@@ -327,8 +371,28 @@ export function createUI(schema, opt) {
 
   _order.forEach(name => {
     _defaults[name] = schema[name] ? schema[name].value : null;
+    const tab = (schema[name] && schema[name].tab) || null;
+    _tabOf[name] = tab;
+    if (tab && !_tabs.includes(tab)) _tabs.push(tab);
     ui[name] = buildControl(name, schema[name]);
   });
+
+  let _activeTab = opt.tab ?? _tabs[0] ?? null;
+  if (_activeTab != null && !_tabs.includes(_activeTab)) _activeTab = _tabs[0] ?? null;
+
+  // ── Tab strip (only when at least one binding declares a tab) ────────────
+  if (_tabs.length) {
+    const strip = document.createElement('div');
+    strip.className = 'p5t-tabs';
+    strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+    strip.style.marginBottom = `${_off}px`;
+    _tabs.forEach(tab => {
+      const t = createTab(tab, () => { _activeTab = tab; _applyTabs(); });
+      _tabEls[tab] = t;
+      strip.appendChild(t);
+    });
+    body.insertBefore(strip, body.firstChild);
+  }
 
   container.appendChild(body);
 
@@ -367,6 +431,19 @@ export function createUI(schema, opt) {
       _collapsed = !!v;
       _applyCollapse();
     }
+  });
+
+  Object.defineProperty(ui, 'tab', {
+    get() { return _activeTab; },
+    set(v) {
+      if (v == null || !_tabs.includes(v)) return;
+      _activeTab = v;
+      _applyTabs();
+    }
+  });
+
+  Object.defineProperty(ui, 'tabs', {
+    get() { return _tabs.slice(); }
   });
 
   // ── Public API ─────────────────────────────────────────────────────────
@@ -431,6 +508,7 @@ export function createUI(schema, opt) {
   mount(container, opt.parent);
   setContainerVis(!opt.hidden);
   _applyCollapse();
+  if (_tabs.length) _applyTabs();
 
   return ui;
 }
