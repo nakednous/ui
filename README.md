@@ -1,6 +1,6 @@
 # `@nakednous/ui`
 
-Parameter binding panels and animation transport controls — **zero dependencies**, pure vanilla DOM.
+Parameter binding panels, animation transport controls, and 6-DOF helm profile editors — **zero dependencies**, pure vanilla DOM.
 
 ---
 
@@ -40,14 +40,17 @@ The `target` contract is minimal: a plain function `(name, value) => ...` or an 
 The single public export. Dispatches on the first argument:
 
 ```js
-// track (has .play) → transport panel
+// track (has .play)  → transport panel
 createPanel(track, opt)
+
+// helm (has .feed)    → helm profile panel
+createPanel(helm, opt)
 
 // plain schema object → parameter binding panel
 createPanel(schema, opt)
 ```
 
-The duck-type check is `typeof first?.play === 'function'`. Schema objects are plain config bags — none will ever have `.play`.
+Dispatch order is `.play` ⇒ track, else `.feed` ⇒ helm, else schema. Schema objects are plain config bags — none will ever have `.play` or `.feed`.
 
 ---
 
@@ -277,6 +280,62 @@ ui.collapsed       // get/set boolean (requires collapsible + title)
 ui.parent(el)      // re-mount into a new HTMLElement
 ui.tick()          // sync seek slider, play button, enabled state — call every frame
 ui.dispose()       // remove DOM and clear lib-space hooks
+```
+
+---
+
+## Helm panel
+
+Edits a `PoseHelm`'s 6-DOF profile and reflects its live activity. Duck-typed: the target needs `.feed` and a `.profile` with the six `{ sign, sens, lane }` channels. Like the transport panel it is push **and** pull — each `tick()` writes any edited field to the profile and reads `helm.activity()` back to drive a per-DOF meter.
+
+```js
+import { createPanel } from '@nakednous/ui'
+
+const ui = createPanel(helm, {
+  frame:    true,                  // pose helms only — adds the EYE / WORLD / SELF selector
+  inline:   true,                  // flow in document order instead of an absolute float
+  onChange: () => regenerate(),    // fired after any user edit
+  width: 132, color: 'white'
+})
+
+// call every frame
+ui.tick()
+```
+
+### Controls
+
+One **signed slider** per DOF spans `−max … +max` with 0 at centre: distance from centre is `sens`, the side is `sign`, and dragging through 0 flips the sign — one control, no separate sign toggle. At 0 the DOF is muted and its **lane** cycle-button disables (a muted DOF routes no channel). Each row carries a thin bipolar **activity meter**, filled from centre by `tick()` from `helm.activity()`. A global **deadzone** slider sits below the six rows.
+
+### frame
+
+`{ frame: true }` adds an `EYE` / `WORLD` / `SELF` selector that writes `helm.from`. A camera helm and a pose helm are the same object structurally, so the selector is opt-in — omitted (the default), no frame row appears and `helm.from` keeps its `EYE` default. A `mat4` frame is a live matrix, not a panel choice, and stays code-set.
+
+### onChange / inline
+
+`onChange()` fires after any user edit (slider, lane, deadzone, frame), so a sketch can react — regenerate a profile-out block, mark state dirty — without polling each frame. Writes that bypass the panel (a device calibration sweep setting `lane` directly) do not fire it; call `onChange` yourself there. `inline: true` flows the panel in normal document order instead of the default absolute float, for mounting it as a section inside an existing layout via `parent`; `x` / `y` are ignored when inline.
+
+### Layout options
+
+| Option     | Default         | Description                                                  |
+|------------|-----------------|--------------------------------------------------------------|
+| `frame`    | `false`         | Show the `EYE` / `WORLD` / `SELF` selector (pose helms only). |
+| `onChange` | —               | Called after any user edit of the profile.                  |
+| `inline`   | `false`         | Flow in document order instead of an absolute float.        |
+| `x` / `y`  | `0`             | Container position (px) — ignored when `inline`.            |
+| `width`    | `130`           | Signed-slider width (px).                                   |
+| `color`    | —               | Container text color (meters inherit it).                   |
+| `title`    | —               | Optional bold title row.                                    |
+| `hidden`   | `false`         | Start hidden.                                               |
+| `parent`   | `document.body` | Mount target (`HTMLElement`).                               |
+
+### Panel API
+
+```js
+ui.el           // HTMLElement container
+ui.visible      // get/set boolean
+ui.parent(el)   // re-mount into a new HTMLElement
+ui.tick()       // write edits, drive activity meters — call every frame
+ui.dispose()    // remove from DOM
 ```
 
 ---

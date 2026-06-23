@@ -6,8 +6,9 @@
  * Pure vanilla DOM.  Zero p5 dependencies.
  * Mount into any container (canvas parent, Vue, React, plain HTML).
  *
- * Duck-type contract for track detection:
+ * Duck-type contract for dispatch (checked in order):
  *   typeof first?.play === 'function'  →  track panel  (_createTrackUI)
+ *   typeof first?.feed === 'function'  →  helm panel   (_createHelmUI)
  *   otherwise                          →  param panel  (_createUI)
  */
 
@@ -15,6 +16,7 @@
 
 import { createUI      as _createUI      } from './bindUI.js';
 import { createTrackUI as _createTrackUI } from './trackUI.js';
+import { createHelmUI  as _createHelmUI  } from './helmUI.js';
 
 /**
  * Unified panel factory.
@@ -26,19 +28,26 @@ import { createTrackUI as _createTrackUI } from './trackUI.js';
  *     opt.add present        → + button enabled
  *     opt.reset present      → ↺ button enabled
  *
+ *   createPanel(helm, opt)    — helm profile controls
+ *     helm must expose: feed, profile, activity
+ *     opt.frame present      → EYE|WORLD|SELF selector (pose helms)
+ *
  *   createPanel(schema, opt)  — parameter controls
- *     schema is a plain object of control definitions (no .play method)
+ *     schema is a plain object of control definitions (no .play / .feed)
  *     opt.target (function|{set}) → values pushed each tick
  *
- * Both paths share the same layout options: x, y, width, color, hidden, parent.
+ * All paths share the same layout options: x, y, width, color, hidden, parent.
  *
- * @param {Object} trackOrSchema
+ * @param {Object} trackOrSchema  A track, a helm, or a plain schema object.
  * @param {Object} [opt]
  * @returns {Object} UI handle with .el, .tick(), .dispose().
  */
 export function createPanel(trackOrSchema, opt) {
   if (typeof trackOrSchema?.play === 'function') {
     return _createTrackUI(trackOrSchema, opt);
+  }
+  if (typeof trackOrSchema?.feed === 'function') {
+    return _createHelmUI(trackOrSchema, opt);
   }
   return _createUI(trackOrSchema, opt);
 }

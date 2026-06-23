@@ -19,10 +19,15 @@ function _el(tag, cls, attrs) {
   return e;
 }
 
-/** Flex-column container, absolute positioned. */
-export function createContainer(cls) {
+/**
+ * Flex-column container. Absolute-positioned by default (a panel floats over the
+ * canvas); pass `inline` to flow it in normal document order instead, for
+ * mounting it as a section inside an existing layout.
+ */
+export function createContainer(cls, inline) {
   const c = _el('div', cls || 'ui');
-  c.style.cssText = 'position:absolute;display:flex;flex-direction:column;gap:0px;';
+  const pos = inline ? 'static' : 'absolute';
+  c.style.cssText = `position:${pos};display:flex;flex-direction:column;gap:0px;`;
   return c;
 }
 
