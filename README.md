@@ -304,11 +304,15 @@ ui.tick()
 
 ### Controls
 
-One **signed slider** per DOF spans `−max … +max` with 0 at centre: distance from centre is `sens`, the side is `sign`, and dragging through 0 flips the sign — one control, no separate sign toggle. At 0 the DOF is muted and its **lane** cycle-button disables (a muted DOF routes no channel). Each row carries a thin bipolar **activity meter**, filled from centre by `tick()` from `helm.activity()`. A global **deadzone** slider sits below the six rows.
+One **signed slider** per DOF spans `−max … +max` with 0 at centre: distance from centre is `sens`, the side is `sign`, and dragging through 0 flips the sign — one control, no separate sign toggle. At 0 the DOF is muted and its **lane** cycle-button disables (a muted DOF routes no channel). Each row carries a thin bipolar **activity meter**, filled from centre by `tick()` from `helm.activity()`, normalised against `helm.fullScale`. A global **deadzone** slider sits below the six rows; when `helm.filter` is set, two **conditioning** sliders — `minCutoff` and `beta` — appear beside it.
 
 ### frame
 
 `{ frame: true }` adds an `EYE` / `WORLD` / `SELF` selector that writes `helm.from`. A camera helm and a pose helm are the same object structurally, so the selector is opt-in — omitted (the default), no frame row appears and `helm.from` keeps its `EYE` default. A `mat4` frame is a live matrix, not a panel choice, and stays code-set.
+
+### Conditioning
+
+When the helm carries an input filter (`helm.filter = oneEuro(...)`), the panel grows `minCutoff` and `beta` sliders next to the deadzone — the 1€ tuning surface. They write straight to `helm.filter.minCutoff` / `.beta`; hidden while no filter is attached, revealed and seeded from the live filter when one is. The filter and the deadzone are independent: the filter smooths jitter, the deadzone zeroes rest bias.
 
 ### onChange / inline
 
