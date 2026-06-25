@@ -33,6 +33,11 @@
  * EYE | WORLD | SELF selector writing `helm.from` (the named frames a pose helm
  * accepts; a mat4 is a live matrix, not a panel choice, and stays code-set).
  *
+ * When a helm carries an input `filter` (the 1€ `oneEuro`), two more sliders —
+ * `minCutoff` (Hz) and `beta` (unitless) — appear beside the deadzone, built
+ * once and revealed by tick() on the null->attached transition, then seeded from
+ * the live filter and panel-owned thereafter.  Hidden (no filter) by default.
+ *
  * ---------------------------------------------------------------------------
  * Push and pull (like the transport panel)
  * ---------------------------------------------------------------------------
@@ -55,7 +60,8 @@
 'use strict';
 
 import {
-  createContainer, createButton, createSlider, createSelect, createLabel, mount
+  createContainer, createButton, createSlider, createSelect, createLabel,
+  setVisible, mount
 } from './dom.js';
 
 // Channel order — matches the helm's activity(out6) layout.  Local, not
@@ -69,11 +75,12 @@ const CHANNELS = ['Tx', 'Ty', 'Tz', 'Rp', 'Ry', 'Rr'];
 const T_MAX = 1,    T_STEP = 0.01;
 const R_MAX = 0.01, R_STEP = 0.0002;
 
-// Raw full-deflection reference — the rate a fully-pushed axis reports.  Used to
-// normalise the meter: activity() is post sign*sens, so |activity| / (sens*FULL)
-// = |rawRate| / FULL, putting translation and rotation meters on one 0..1 scale
-// despite their differing sens magnitudes.
-const ACT_FULL = 500;
+// Conditioning-slider presentation bounds — the 1€ filter knobs, shown only
+// when a filter is attached.  minCutoff in Hz (the rest cutoff); beta unitless
+// (how fast the cutoff opens with speed).  Presentation bounds, not filter
+// limits — the filter accepts any number, as the profile does.
+const MINCUT_MIN = 0.1, MINCUT_MAX = 10, MINCUT_STEP = 0.1;
+const BETA_MIN   = 0,   BETA_MAX   = 2,  BETA_STEP   = 0.01;
 
 // The named frames a pose helm accepts (the helm.from contract; a mat4 is
 // code-only).  String values match the helm's own constants.
@@ -201,6 +208,40 @@ export function createHelmUI(helm, opt) {
   dzRow.appendChild(dzSlider);
   container.appendChild(dzRow);
 
+  // ── Value-layer conditioning sliders (shown only with an attached filter) ──
+  // Built once as deadzone siblings; hidden until helm.filter is non-null.  On
+  // the null->attached edge tick() reveals them and seeds from the live filter;
+  // panel-owned thereafter.  Writes are guarded on the filter still existing.
+
+  const mcRow = document.createElement('div');
+  mcRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0;';
+  const mcLabel = createLabel('minCutoff');
+  mcLabel.style.minWidth = '54px';
+  const mcSlider = createSlider(MINCUT_MIN, MINCUT_MAX, 1, MINCUT_STEP, (v) => {
+    if (helm.filter) { helm.filter.minCutoff = v; _changed(); }
+  });
+  mcSlider.style.flex = '1';
+  mcRow.appendChild(mcLabel);
+  mcRow.appendChild(mcSlider);
+  container.appendChild(mcRow);
+
+  const betaRow = document.createElement('div');
+  betaRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0;';
+  const betaLabel = createLabel('beta');
+  betaLabel.style.minWidth = '54px';
+  const betaSlider = createSlider(BETA_MIN, BETA_MAX, 0, BETA_STEP, (v) => {
+    if (helm.filter) { helm.filter.beta = v; _changed(); }
+  });
+  betaSlider.style.flex = '1';
+  betaRow.appendChild(betaLabel);
+  betaRow.appendChild(betaSlider);
+  container.appendChild(betaRow);
+
+  // Hidden until a filter attaches; tick() reconciles against helm.filter.
+  setVisible(mcRow, false);
+  setVisible(betaRow, false);
+  let _filterShown = false;
+
   // ── Optional frame selector (pose-helm frame; named values only) ────────────
 
   if (opt.frame) {
@@ -231,11 +272,25 @@ export function createHelmUI(helm, opt) {
   ui.parent = (el) => mount(container, el);
 
   /**
-   * Drive the activity meters and re-sync the lane buttons from the live
-   * profile.  Call once per frame.  The fill fraction is normalised per channel
-   * by sens*ACT_FULL so translation and rotation read on one scale.
+   * Reconcile the conditioning sliders against helm.filter, then drive the
+   * activity meters and re-sync the lane buttons from the live profile.  Call
+   * once per frame.  The fill fraction is normalised per channel by
+   * sens*helm.fullScale so translation and rotation read on one scale.
    */
   ui.tick = () => {
+    // Reveal / hide the conditioning sliders against the live filter, seeding
+    // them from it on the null->attached edge (panel-owned thereafter).
+    const hasFilter = helm.filter != null;
+    if (hasFilter !== _filterShown) {
+      setVisible(mcRow, hasFilter);
+      setVisible(betaRow, hasFilter);
+      if (hasFilter) {
+        mcSlider.value   = helm.filter.minCutoff;
+        betaSlider.value = helm.filter.beta;
+      }
+      _filterShown = hasFilter;
+    }
+
     helm.activity(_act);
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i], c = profile[r.ch];
@@ -243,9 +298,12 @@ export function createHelmUI(helm, opt) {
       const laneStr = `${c.lane}`;
       if (r.laneBtn.textContent !== laneStr) r.laneBtn.textContent = laneStr;
       r.laneBtn.disabled = c.sens === 0;
-      // meter — bipolar fill, normalised to raw deflection.
+      // meter — bipolar fill normalised by helm.fullScale: activity() is post
+      // sign*sens, so |activity| / (sens*fullScale) = |rawRate| / fullScale,
+      // putting translation and rotation on one 0..1 scale despite differing
+      // sens.  Reads the live helm field, exactly as deadzone reads helm.deadzone.
       const a   = _act[i];
-      const f   = c.sens > 0 ? Math.min(Math.abs(a) / (c.sens * ACT_FULL), 1) : 0;
+      const f   = c.sens > 0 ? Math.min(Math.abs(a) / (c.sens * helm.fullScale), 1) : 0;
       const pct = f * 50;
       r.fill.style.left    = a >= 0 ? '50%' : `${50 - pct}%`;
       r.fill.style.width   = `${pct}%`;
