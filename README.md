@@ -202,8 +202,8 @@ ui.tick()
 | `_onPlay`     | ✓        | Lib-space hook — assigned by this panel.  |
 | `_onEnd`      | ✓        | Lib-space hook — assigned by this panel.  |
 | `_onStop`     | ✓        | Lib-space hook — assigned by this panel.  |
-| `add(depth?)` | optional | Add a keyframe. Enables the `+` button.   |
-| `reset()`     | optional | Clear all keyframes. Enables `↺`.         |
+| `add(depth?)` | optional | Add a keyframe. Enables `+` (unless `add: false`).   |
+| `reset()`     | optional | Clear all keyframes. Enables `↺` (unless `reset: false`). |
 | `info()`      | optional | Returns `{ keyframes, segments, ... }`.   |
 
 ### Transport model
@@ -255,6 +255,8 @@ track.play({ bounce: true }) // bounce checkbox checked ✓
 | `props`       | `true`          | Show rate slider + loop controls.                                    |
 | `info`        | `false`         | Show time/keyframe readout.                                          |
 | `play`        | `true`          | Show play/stop button. `false` suppresses it.                        |
+| `add`         | `true`          | Show `+` when the target exposes `add()`. `false` suppresses it (and the depth slider). |
+| `reset`       | `true`          | Show `↺` when the target exposes `reset()`. `false` suppresses it.  |
 | `rate`        | `target.rate`   | Initial rate (seeded once; UI-owned after creation).                 |
 | `loop`        | `target.loop`   | Initial loop state (seeded from live track; polled while playing).   |
 | `bounce`      | `target.bounce` | Initial bounce state (seeded from live track; polled while playing). |

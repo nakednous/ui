@@ -25,8 +25,8 @@ import { createHelmUI  as _createHelmUI  } from './helmUI.js';
  *
  *   createPanel(track, opt)   — transport controls
  *     track must expose: play, stop, seek, time, playing
- *     opt.add present        → + button enabled
- *     opt.reset present      → ↺ button enabled
+ *     target.add present     → + button (suppress with opt.add: false)
+ *     target.reset present   → ↺ button (suppress with opt.reset: false)
  *
  *   createPanel(helm, opt)    — helm profile controls
  *     helm must expose: feed, profile, activity

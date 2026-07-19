@@ -88,6 +88,10 @@ import {
  * @param {boolean} [opt.info=false]      Show time/keyframe readout.
  * @param {boolean} [opt.play=true]       Show play/pause button. false hides it —
  *                                        seek slider becomes the sole transport control.
+ * @param {boolean} [opt.add=true]        Show the add button when the target exposes
+ *                                        add(). false hides it (and the depth slider).
+ * @param {boolean} [opt.reset=true]      Show the reset button when the target exposes
+ *                                        reset(). false hides it.
  * @param {number}  [opt.rate=1]          Initial rate (overridden by target.rate if set).
  * @param {boolean} [opt.loop=false]      Initial loop state (overridden by target.loop).
  * @param {boolean} [opt.bounce=false]    Initial bounce state (overridden by target.bounce).
@@ -178,10 +182,10 @@ export function createTrackUI(target, opt) {
 
   // ── Row 1 — controls: [+] [▶/⏸] [↺] ─────────────────────────────────────
   //
-  // Each button is independently optional:
-  //   hasAdd   — target exposes add()          (+ button)
-  //   showPlay — opt.play !== false            (play/pause button)
-  //   hasReset — target exposes reset()        (reset button)
+  // Each button is independently optional — capability gated by opt:
+  //   hasAdd   — target exposes add()   and opt.add   !== false   (+ button)
+  //   showPlay — opt.play !== false                               (play/pause button)
+  //   hasReset — target exposes reset() and opt.reset !== false   (reset button)
   //
   // The row is only appended when at least one button is present, so that
   // fully button-free panels produce no empty DOM row.
@@ -190,7 +194,7 @@ export function createTrackUI(target, opt) {
   ctrlRow.className = 'p5t-controls';
   ctrlRow.style.cssText = 'display:flex;gap:4px;margin-bottom:4px;align-items:center;';
 
-  const hasAdd = typeof target.add === 'function';
+  const hasAdd = typeof target.add === 'function' && opt.add !== false;
   if (hasAdd) {
     const btnAdd = createButton('\u002B', () => {
       target.add(_depth);
@@ -215,7 +219,7 @@ export function createTrackUI(target, opt) {
   }
 
   let btnReset = null;
-  const hasReset = typeof target.reset === 'function';
+  const hasReset = typeof target.reset === 'function' && opt.reset !== false;
   if (hasReset) {
     btnReset = createButton('\u21BA', () => {
       target.reset();
