@@ -18,20 +18,24 @@ import { createPanel } from '@nakednous/ui'
 
 ## Architecture
 
-`@nakednous/ui` is the DOM layer of a three-package stack. It knows nothing about renderers or p5 — it mounts into any `HTMLElement`.
+`@nakednous/ui` is the presentation layer of an engine-free stack: three renderer-free packages under the `@nakednous` scope, and bridges that draw. It knows nothing about renderers, p5 or the host — it mounts into any `HTMLElement`.
 
 ```
   application
       │
       ▼
-  p5.tree.js        ← bridge: wires tree + ui into p5.js v2
+  twgl.tree · p5.tree · webgpu.tree   ← bridges: draw, the GPU ceremony, a framework adapter
       │
-      ├── @nakednous/ui    ← this package: param panels, transport controls
+      ├── @nakednous/host  ← DOM transport: pointer, view, players, handles, devices, labels, orbit
       │
-      └── @nakednous/tree  ← math, spaces, animation, visibility
+      ├── @nakednous/ui    ← this package: param panels, transport controls, helm editors
+      │
+      └── @nakednous/tree  ← math, spaces, animation, visibility, gizmo geometry
 ```
 
-The `target` contract is minimal: a plain function `(name, value) => ...` or an object with `.set(name, value)`. Nothing renderer-specific. Shader wiring (`setUniform`) is handled by the p5.tree bridge, not here.
+The dependency direction is strict: `ui` depends on `tree` only, never on `host` or a bridge; `host` never imports `ui`; a bridge depends on `tree` and `host`, and the application mounts `ui` beside it as an optional peer. `@nakednous/*` never renders — rendering lives in the `*.tree` bridges.
+
+The `target` contract is minimal: a plain function `(name, value) => ...` or an object with `.set(name, value)`. Nothing renderer-specific. A bridge's uniforms bag is one such target: a panel writes `u*` names, the bridge's `bind` reads them; p5.tree's `setUniform` wiring is another.
 
 ---
 
