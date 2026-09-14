@@ -24,7 +24,7 @@ import { createPanel } from '@nakednous/ui'
   application
       │
       ▼
-  twgl.tree · p5.tree · webgpu.tree   ← bridges: draw, the GPU ceremony, a framework adapter
+  webgl.tree · p5.tree · webgpu.tree  ← bridges: draw, the GPU ceremony, a framework adapter
       │
       ├── @nakednous/host  ← DOM transport: pointer, view, players, handles, devices, labels, orbit
       │
