@@ -120,6 +120,10 @@ function inferType(cfg) {
  * @param {string}  [opt.color]          Container text color.
  * @param {boolean} [opt.hidden=false]   Start hidden.
  * @param {boolean} [opt.labels=false]   Show per-binding labels.
+ * @param {number}  [opt.columns=1]      Bindings per row. Above 1 the body is a grid: each binding is
+ *   one cell, or a label / control pair of cells with `labels`; a vec binding's sliders share a cell.
+ *   A hidden binding leaves the grid, so the rest stay aligned.
+ * @param {number}  [opt.columnGap=8]    Horizontal gap between grid cells (px), with `columns` above 1.
  * @param {string}  [opt.title]          Bold title row.
  * @param {boolean} [opt.collapsible]    Make title row a collapse toggle (requires title).
  * @param {boolean} [opt.collapsed]      Start collapsed (requires collapsible + title).
@@ -137,6 +141,8 @@ export function createUI(schema, opt) {
   const _w          = opt.width  ?? 120;
   const _off        = opt.offset ?? 6;
   const _showLabels = !!opt.labels;
+  const _cols       = Math.max(1, Math.floor(opt.columns ?? 1));
+  const _cells      = {};   // name → the cell wrapping a multi-element control, in a grid
 
   const ui        = {};
   const container = createContainer('param-ui');
@@ -155,7 +161,11 @@ export function createUI(schema, opt) {
 
   const body = document.createElement('div');
   body.className = 'p5t-body';
-  body.style.cssText = 'display:flex;flex-direction:column;gap:0px;';
+  const _bodyDisplay = _cols > 1 ? 'grid' : 'flex';
+  body.style.cssText = _cols > 1
+    ? `display:grid;grid-template-columns:repeat(${_cols},${_showLabels ? 'auto auto' : 'auto'});`
+      + `column-gap:${opt.columnGap ?? 8}px;align-items:center;`
+    : 'display:flex;flex-direction:column;gap:0px;';
 
   // ── Title ─────────────────────────────────────────────────────────────────
 
@@ -217,6 +227,7 @@ export function createUI(schema, opt) {
     const els  = isArr(c.el) ? c.el : [c.el];
     els.forEach(e => setVisible(e, show));
     _labels[name] && setVisible(_labels[name], show);
+    _cells[name] && setVisible(_cells[name], show);
   }
 
   function buildControl(name, cfg) {
@@ -289,11 +300,19 @@ export function createUI(schema, opt) {
       const max  = cfg.max  ?? 1;
       const step = cfg.step ?? (cfg.type === 'int' ? 1 : 0.01);
       const els  = [];
+      // In a grid the sliders share one cell, so the binding stays one entry of its row.
+      let cell = body;
+      if (_cols > 1) {
+        cell = document.createElement('div');
+        cell.style.cssText = 'display:flex;flex-direction:column;';
+        body.appendChild(cell);
+        _cells[name] = cell;
+      }
       for (let i = 0; i < n; i++) {
         const s = createSlider(min, max, toFloat(vals[i] ?? 0), step);
         s.style.width = `${w}px`;
         _setGap(s);
-        body.appendChild(s);
+        cell.appendChild(s);
         els.push(s);
       }
       const c = wrap(name, type, els,
@@ -335,7 +354,7 @@ export function createUI(schema, opt) {
   // ── Collapse helper ────────────────────────────────────────────────────
 
   function _applyCollapse() {
-    body.style.display = _collapsed ? 'none' : 'flex';
+    body.style.display = _collapsed ? 'none' : _bodyDisplay;
     if (chevron) chevron.textContent = _collapsed ? '\u25B6' : '\u25BC';
   }
 

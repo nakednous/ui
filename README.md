@@ -164,6 +164,8 @@ panel.dispose()      // remove from DOM
 | `width`       | `120`           | Default slider/select width (px).        |
 | `offset`      | `6`             | Vertical gap between rows (px).          |
 | `labels`      | `false`         | Show per-binding labels.                 |
+| `columns`     | `1`             | Bindings per row; above 1 the body is a grid of label / control cells (a vec's sliders share a cell), and a hidden binding leaves it. |
+| `columnGap`   | `8`             | Horizontal gap between grid cells (px).  |
 | `title`       | —               | Bold title row.                          |
 | `collapsible` | `false`         | Title row becomes a collapse toggle.     |
 | `collapsed`   | `false`         | Start collapsed (implies collapsible).   |
