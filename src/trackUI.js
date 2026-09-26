@@ -37,6 +37,9 @@
  *
  * Optional:
  *   target.add(d?)       Add keyframe at depth d [0..1] (near..far plane centre).
+ *                        Called with no argument when the depth row is hidden
+ *                        (opt.depth === false) — a target whose keyframe has no
+ *                        placement depth reads both the same way.
  *   target.reset()       Clear all keyframes and stop.
  *   target.info()        Returns { keyframes, segments, seg, f, time, ... }.
  *
@@ -55,7 +58,7 @@
  * ---------------------
  *   Title row  — optional, becomes collapse toggle when collapsible=true
  *   Row 1  — controls:  [+]  [▶/⏸]  [↺]   (each independently optional)
- *   Row 1b — depth:     depth slider        (when target supports add)
+ *   Row 1b — depth:     depth slider        (when target supports add and opt.depth !== false)
  *   Row 2  — seek:      seek slider         (hidden when keyframes ≤ 1)
  *   Row 3  — rate:      rate label + slider (when showProps)
  *   Row 4  — loop + bounce: both checkboxes always visible, independent
@@ -96,6 +99,8 @@ import {
  * @param {boolean} [opt.loop=false]      Initial loop state (overridden by target.loop).
  * @param {boolean} [opt.bounce=false]    Initial bounce state (overridden by target.bounce).
  * @param {number}  [opt.depth=0.5]       Initial add-pose depth [0..1]: 0 = near, 1 = far.
+ *                                        false hides the depth row, and the add button
+ *                                        then calls target.add() with no argument.
  * @param {number}  [opt.x=0]            Container left (px).
  * @param {number}  [opt.y=0]            Container top (px).
  * @param {number}  [opt.width=220]      Slider width (px).
@@ -194,10 +199,13 @@ export function createTrackUI(target, opt) {
   ctrlRow.className = 'p5t-controls';
   ctrlRow.style.cssText = 'display:flex;gap:4px;margin-bottom:4px;align-items:center;';
 
-  const hasAdd = typeof target.add === 'function' && opt.add !== false;
+  const hasAdd    = typeof target.add === 'function' && opt.add !== false;
+  const showDepth = hasAdd && opt.depth !== false;
   if (hasAdd) {
+    // No depth row → no depth argument: the target decides what + means (a
+    // camera track captures its camera, having nothing to place).
     const btnAdd = createButton('\u002B', () => {
-      target.add(_depth);
+      target.add(showDepth ? _depth : undefined);
       _lastKf = -1;
     });
     btnAdd.title = 'Add keyframe';
@@ -236,7 +244,7 @@ export function createTrackUI(target, opt) {
 
   // ── Row 1b — depth slider ─────────────────────────────────────────────────
 
-  if (hasAdd && opt.depth !== false) {
+  if (showDepth) {
     const depthRow = document.createElement('div');
     depthRow.className = 'p5t-depth';
     depthRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:2px;font-size:11px;';

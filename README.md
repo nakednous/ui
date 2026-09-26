@@ -208,7 +208,7 @@ ui.tick()
 | `_onPlay`     | ✓        | Lib-space hook — assigned by this panel.  |
 | `_onEnd`      | ✓        | Lib-space hook — assigned by this panel.  |
 | `_onStop`     | ✓        | Lib-space hook — assigned by this panel.  |
-| `add(depth?)` | optional | Add a keyframe. Enables `+` (unless `add: false`).   |
+| `add(depth?)` | optional | Add a keyframe. Enables `+` (unless `add: false`). Called with no argument when the depth row is hidden (`depth: false`). |
 | `reset()`     | optional | Clear all keyframes. Enables `↺` (unless `reset: false`). |
 | `info()`      | optional | Returns `{ keyframes, segments, ... }`.   |
 
@@ -266,7 +266,7 @@ track.play({ bounce: true }) // bounce checkbox checked ✓
 | `rate`        | `target.rate`   | Initial rate (seeded once; UI-owned after creation).                 |
 | `loop`        | `target.loop`   | Initial loop state (seeded from live track; polled while playing).   |
 | `bounce`      | `target.bounce` | Initial bounce state (seeded from live track; polled while playing). |
-| `depth`       | `0.5`           | Initial add-pose depth [0..1].                                       |
+| `depth`       | `0.5`           | Initial add-pose depth [0..1]. `false` hides the depth row — for a target whose keyframe has no placement depth (a camera track); `+` then calls `add()` with no argument. |
 | `title`       | —               | Optional title row.                                                  |
 | `collapsible` | `false`         | Title row becomes a collapse toggle.                                 |
 | `collapsed`   | `false`         | Start collapsed (implies collapsible).                               |
