@@ -127,9 +127,13 @@ export function vec4ToHex(v) {
 export function setVisible(el, show) {
   if (!el || !el.style) return;
   if (show) {
+    // Nothing was hidden by us: the element keeps whatever inline display it
+    // carries (a grid cell's flex, say) — restoring '' would flatten it.
     const prev = el.dataset?._uiDisplay;
-    el.style.display = prev != null ? prev : '';
-    if (el.dataset) delete el.dataset._uiDisplay;
+    if (prev != null) {
+      el.style.display = prev;
+      if (el.dataset) delete el.dataset._uiDisplay;
+    }
   } else {
     if (el.dataset) el.dataset._uiDisplay ??= el.style.display || '';
     el.style.display = 'none';
