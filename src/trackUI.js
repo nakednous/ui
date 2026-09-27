@@ -41,6 +41,11 @@
  *                        (opt.depth === false) — a target whose keyframe has no
  *                        placement depth reads both the same way.
  *   target.reset()       Clear all keyframes and stop.
+ *   target.remove(i?)    Remove one keyframe — no argument, the last, which is
+ *                        what the − button asks for. One per click; the button
+ *                        is disabled while the keyframe count is 0 (read from
+ *                        info(), so a target without it keeps it enabled and
+ *                        its own no-op decides).
  *   target.info()        Returns { keyframes, segments, seg, f, time, ... }.
  *
  * State initialisation
@@ -57,7 +62,7 @@
  * Layout (top → bottom)
  * ---------------------
  *   Title row  — optional, becomes collapse toggle when collapsible=true
- *   Row 1  — controls:  [+]  [▶/⏸]  [↺]   (each independently optional)
+ *   Row 1  — controls:  [+]  [−]  [▶/⏸]  [↺]   (each independently optional)
  *   Row 1b — depth:     depth slider        (when target supports add and opt.depth !== false)
  *   Row 2  — seek:      seek slider         (hidden when keyframes ≤ 1)
  *   Row 3  — rate:      rate label + slider (when showProps)
@@ -93,6 +98,9 @@ import {
  *                                        seek slider becomes the sole transport control.
  * @param {boolean} [opt.add=true]        Show the add button when the target exposes
  *                                        add(). false hides it (and the depth slider).
+ * @param {boolean} [opt.remove=true]     Show the remove-last button when the target exposes
+ *                                        remove(). false hides it — a panel whose track is
+ *                                        authored elsewhere, not by its reader.
  * @param {boolean} [opt.reset=true]      Show the reset button when the target exposes
  *                                        reset(). false hides it.
  * @param {number}  [opt.rate=1]          Initial rate (overridden by target.rate if set).
@@ -185,12 +193,13 @@ export function createTrackUI(target, opt) {
     container.appendChild(titleRow);
   }
 
-  // ── Row 1 — controls: [+] [▶/⏸] [↺] ─────────────────────────────────────
+  // ── Row 1 — controls: [+] [−] [▶/⏸] [↺] ─────────────────────────────────
   //
   // Each button is independently optional — capability gated by opt:
-  //   hasAdd   — target exposes add()   and opt.add   !== false   (+ button)
-  //   showPlay — opt.play !== false                               (play/pause button)
-  //   hasReset — target exposes reset() and opt.reset !== false   (reset button)
+  //   hasAdd    — target exposes add()    and opt.add    !== false  (+ button)
+  //   hasRemove — target exposes remove() and opt.remove !== false  (− button)
+  //   showPlay  — opt.play !== false                                (play/pause button)
+  //   hasReset  — target exposes reset()  and opt.reset  !== false  (reset button)
   //
   // The row is only appended when at least one button is present, so that
   // fully button-free panels produce no empty DOM row.
@@ -210,6 +219,20 @@ export function createTrackUI(target, opt) {
     });
     btnAdd.title = 'Add keyframe';
     ctrlRow.appendChild(btnAdd);
+  }
+
+  // One keyframe per click, the last one: the button retracts what + authored,
+  // in the order it was authored. Disabled at 0 (in _updateEnabledState).
+  let btnRemove = null;
+  const hasRemove = typeof target.remove === 'function' && opt.remove !== false;
+  if (hasRemove) {
+    btnRemove = createButton('\u2212', () => {
+      target.remove();
+      _lastKf = -1;
+      _updateEnabledState();
+    });
+    btnRemove.title = 'Remove last keyframe';
+    ctrlRow.appendChild(btnRemove);
   }
 
   let btnPlay = null;
@@ -238,7 +261,7 @@ export function createTrackUI(target, opt) {
     ctrlRow.appendChild(btnReset);
   }
 
-  if (hasAdd || showPlay || hasReset) {
+  if (hasAdd || hasRemove || showPlay || hasReset) {
     body.appendChild(ctrlRow);
   }
 
@@ -375,6 +398,7 @@ export function createTrackUI(target, opt) {
     if (kf === _lastKf) return;
     _lastKf = kf;
     if (btnPlay)    btnPlay.disabled    = kf === 0;
+    if (btnRemove)  btnRemove.disabled  = kf === 0;   // nothing left to retract
     if (btnReset)   btnReset.disabled   = kf === 0;
     if (seekSlider) seekSlider.disabled = kf < 2;
   }

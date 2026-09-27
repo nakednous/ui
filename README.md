@@ -209,12 +209,15 @@ ui.tick()
 | `_onEnd`      | ✓        | Lib-space hook — assigned by this panel.  |
 | `_onStop`     | ✓        | Lib-space hook — assigned by this panel.  |
 | `add(depth?)` | optional | Add a keyframe. Enables `+` (unless `add: false`). Called with no argument when the depth row is hidden (`depth: false`). |
+| `remove(i?)`  | optional | Remove one keyframe — no argument, the last. Enables `−` (unless `remove: false`); disabled while the count is 0. |
 | `reset()`     | optional | Clear all keyframes. Enables `↺` (unless `reset: false`). |
 | `info()`      | optional | Returns `{ keyframes, segments, ... }`.   |
 
 ### Transport model
 
 The Play/Pause button is the **sole** control that starts or stops playback. The rate slider adjusts speed without starting or stopping. The seek slider scrubs position without affecting `playing`. The loop and bounce checkboxes change looping behaviour without starting playback.
+
+**`+` and `−` author one keyframe per click**: `+` asks the target for a keyframe where the camera looks, at the depth slider's setting; `−` asks it to take the last one back, and is disabled while the track has none. Neither starts or stops playback, and `↺` still clears the lot.
 
 **Loop modes** — `loop` and `bounce` are fully independent:
 
@@ -245,7 +248,7 @@ track.play({ bounce: true }) // bounce checkbox checked ✓
 
 ```
   Title row  — optional, becomes collapse toggle when collapsible=true
-  [ + ]  [ ▶/⏸ ]  [ ↺ ]        — add / play-pause / reset
+  [ + ]  [ − ]  [ ▶/⏸ ]  [ ↺ ]  — add / remove last / play-pause / reset
   depth: ──────────────        — placement depth (0 = near, 1 = far)
   seek:  ──────────────        — scrub position [0, 1]
   rate:  ──────────────        — signed speed (negative reverses)
@@ -262,6 +265,7 @@ track.play({ bounce: true }) // bounce checkbox checked ✓
 | `info`        | `false`         | Show time/keyframe readout.                                          |
 | `play`        | `true`          | Show play/stop button. `false` suppresses it.                        |
 | `add`         | `true`          | Show `+` when the target exposes `add()`. `false` suppresses it (and the depth slider). |
+| `remove`      | `true`          | Show `−` when the target exposes `remove()`. `false` suppresses it — a panel whose track is authored elsewhere, not by its reader. |
 | `reset`       | `true`          | Show `↺` when the target exposes `reset()`. `false` suppresses it.  |
 | `rate`        | `target.rate`   | Initial rate (seeded once; UI-owned after creation).                 |
 | `loop`        | `target.loop`   | Initial loop state (seeded from live track; polled while playing).   |
