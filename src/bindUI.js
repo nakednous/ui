@@ -58,6 +58,14 @@
  *   number / default   → 'float'
  *
  * ---------------------------------------------------------------------------
+ * Grid slots
+ * ---------------------------------------------------------------------------
+ *   With opt.columns above 1 the body is a grid and a binding may take more
+ *   than one of its slots: cfg.span (default 1, clamped to opt.columns) makes
+ *   it span that many, its label and control together inside one cell — a wide
+ *   select under a row of toggles. A binding that does not span is unchanged.
+ *
+ * ---------------------------------------------------------------------------
  * Returned API
  * ---------------------------------------------------------------------------
  *   ui.el                       HTMLElement (container)
@@ -121,7 +129,8 @@ function inferType(cfg) {
  * @param {boolean} [opt.hidden=false]   Start hidden.
  * @param {boolean} [opt.labels=false]   Show per-binding labels.
  * @param {number}  [opt.columns=1]      Bindings per row. Above 1 the body is a grid: each binding is
- *   one cell, or a label / control pair of cells with `labels`; a vec binding's sliders share a cell.
+ *   one cell, or a label / control pair of cells with `labels`; a vec binding's sliders share a cell,
+ *   and a binding's own `span` may take several slots (a wide select under a row of toggles).
  *   A hidden binding leaves the grid, so the rest stay aligned.
  * @param {number}  [opt.columnGap=8]    Horizontal gap between grid cells (px), with `columns` above 1.
  * @param {string}  [opt.title]          Bold title row.
@@ -197,11 +206,11 @@ export function createUI(schema, opt) {
 
   function _setGap(el) { el.style.marginBottom = `${_off}px`; }
 
-  function addLabel(name, cfg) {
+  function addLabel(name, cfg, target) {
     if (!_showLabels) return;
     const l = createLabel(cfg.label || name);
     l.style.marginBottom = `${_off}px`;
-    body.appendChild(l);
+    (target || body).appendChild(l);
     _labels[name] = l;
   }
 
@@ -235,13 +244,27 @@ export function createUI(schema, opt) {
     const type = inferType(cfg);
     const w    = cfg.width ?? _w;
 
-    addLabel(name, cfg);
+    // A binding may take more than one of the grid's slots (opt.columns is the
+    // slots per row): a wide select under a row of toggles. A spanning binding
+    // is wrapped in one cell that spans them all, its label and control side by
+    // side inside it — how a single-column panel lays them out.
+    const span = Math.max(1, Math.min(_cols, Math.floor(cfg.span ?? 1) || 1));
+    let cell = body;
+    if (_cols > 1 && span > 1) {
+      cell = document.createElement('div');
+      cell.style.cssText = `display:flex;align-items:center;gap:${opt.columnGap ?? 8}px;` +
+                           `grid-column:span ${span * (_showLabels ? 2 : 1)};`;
+      body.appendChild(cell);
+      _cells[name] = cell;
+    }
+
+    addLabel(name, cfg, cell);
 
     // ── bool ──
     if (type === 'bool') {
       const el  = createCheckbox('', cfg.value ?? false);
       _setGap(el);
-      body.appendChild(el);
+      cell.appendChild(el);
       const inp = el.firstChild;
       const c = wrap(name, 'bool', el,
         () => inp.checked,
@@ -258,7 +281,7 @@ export function createUI(schema, opt) {
         typeof cfg.onClick === 'function' ? cfg.onClick : null);
       el.style.width = `${w}px`;
       _setGap(el);
-      body.appendChild(el);
+      cell.appendChild(el);
       return wrap(name, 'button', el, () => null, () => {}, () => {});
     }
 
@@ -267,7 +290,7 @@ export function createUI(schema, opt) {
       const el = createSelect(cfg.options, cfg.value);
       el.style.width = `${w}px`;
       _setGap(el);
-      body.appendChild(el);
+      cell.appendChild(el);
       const c = wrap(name, 'select', el,
         () => el.value,
         v  => { el.value = v; },
@@ -282,7 +305,7 @@ export function createUI(schema, opt) {
       const el = createColorPicker(cfg.value);
       el.style.width = `${w}px`;
       _setGap(el);
-      body.appendChild(el);
+      cell.appendChild(el);
       const c = wrap(name, 'color', el,
         () => hexToVec4(el.value),
         v  => { el.value = isStr(v) ? v : isArr(v) ? vec4ToHex(v) : v; },
@@ -300,13 +323,14 @@ export function createUI(schema, opt) {
       const max  = cfg.max  ?? 1;
       const step = cfg.step ?? (cfg.type === 'int' ? 1 : 0.01);
       const els  = [];
-      // In a grid the sliders share one cell, so the binding stays one entry of its row.
-      let cell = body;
+      // In a grid the sliders share one cell, so the binding stays one entry of its row;
+      // inside a spanning cell they stack under its label.
       if (_cols > 1) {
-        cell = document.createElement('div');
-        cell.style.cssText = 'display:flex;flex-direction:column;';
-        body.appendChild(cell);
-        _cells[name] = cell;
+        const stack = document.createElement('div');
+        stack.style.cssText = 'display:flex;flex-direction:column;';
+        cell.appendChild(stack);
+        cell = stack;
+        if (!_cells[name]) _cells[name] = stack;
       }
       for (let i = 0; i < n; i++) {
         const s = createSlider(min, max, toFloat(vals[i] ?? 0), step);
@@ -332,7 +356,7 @@ export function createUI(schema, opt) {
     const el   = createSlider(min, max, val, step);
     el.style.width = `${w}px`;
     _setGap(el);
-    body.appendChild(el);
+    cell.appendChild(el);
     const c = wrap(name, cfg.type === 'int' ? 'int' : 'float', el,
       () => toFloat(el.value),
       v  => { el.value = toFloat(v); },

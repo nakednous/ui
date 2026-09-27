@@ -93,6 +93,17 @@ panel.tick()
 
 Override with `{ type: 'int', ... }`.
 
+A binding can also take more than one slot of the grid. With `columns: 2` and `labels: true` two bindings share a row; `span: 2` gives one the whole row, its label and control side by side — a wide select under a row of toggles:
+
+```js
+createPanel({
+  path:     { value: true },
+  controls: { value: true },
+  position: { type: 'select', options: ['hermite', 'linear', 'step'], span: 2 },
+  rotation: { type: 'select', options: ['slerp', 'nlerp', 'step'],   span: 2 }
+}, { columns: 2, labels: true, columnGap: 14, width: 86 })
+```
+
 ### Target
 
 ```js
@@ -164,7 +175,7 @@ panel.dispose()      // remove from DOM
 | `width`       | `120`           | Default slider/select width (px).        |
 | `offset`      | `6`             | Vertical gap between rows (px).          |
 | `labels`      | `false`         | Show per-binding labels.                 |
-| `columns`     | `1`             | Bindings per row; above 1 the body is a grid of label / control cells (a vec's sliders share a cell), and a hidden binding leaves it. |
+| `columns`     | `1`             | Bindings per row; above 1 the body is a grid of label / control cells (a vec's sliders share a cell), and a hidden binding leaves it. A binding may take several slots with its own `span`. |
 | `columnGap`   | `8`             | Horizontal gap between grid cells (px).  |
 | `title`       | —               | Bold title row.                          |
 | `collapsible` | `false`         | Title row becomes a collapse toggle.     |
