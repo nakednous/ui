@@ -85,7 +85,7 @@ const BETA_MIN   = 0,   BETA_MAX   = 2,  BETA_STEP   = 0.01;
 // The named frames a pose helm accepts (the helm.from contract; a mat4 is
 // code-only).  String values match the helm's own constants.
 const FRAMES = [
-  { value: 'EYE',   label: 'EYE (screen)' },
+  { value: 'EYE',   label: 'EYE (view)' },
   { value: 'WORLD', label: 'WORLD (fixed)' },
   { value: 'SELF',  label: 'SELF (body)' },
 ];
