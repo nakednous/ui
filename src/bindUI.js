@@ -258,7 +258,10 @@ export function createUI(schema, opt) {
       _cells[name] = cell;
     }
 
-    addLabel(name, cfg, cell);
+    // A button carries its own name — the label would say the same word twice,
+    // stacked, and a panel's own bottom row is where a figure's readout wants to
+    // be. Every other control needs the label beside it.
+    if (type !== 'button') addLabel(name, cfg, cell);
 
     // ── bool ──
     if (type === 'bool') {
