@@ -52,6 +52,7 @@
  * ---------------------------------------------------------------------------
  *   ui.el              HTMLElement container
  *   ui.visible  get/set boolean
+ *   ui.collapsed get/set boolean (requires collapsible + title)
  *   ui.parent(el)      re-mount container into a new parent HTMLElement
  *   ui.tick()          drive meters + lane sync — call once per frame
  *   ui.dispose()       remove container from DOM
@@ -107,6 +108,8 @@ const _isT = (ch) => ch.charCodeAt(0) === 84;
  * @param {Function}[opt.onChange]     Called after any user edit of the profile.
  * @param {boolean} [opt.hidden=false] Start hidden.
  * @param {string}  [opt.title]        Optional bold title row.
+ * @param {boolean} [opt.collapsible]  Make title row a collapse toggle (requires title).
+ * @param {boolean} [opt.collapsed]    Start collapsed (requires collapsible + title).
  * @param {HTMLElement} [opt.parent]   Mount target (defaults to document.body).
  * @returns {Object} Panel handle — see "Returned API" above.
  */
@@ -128,14 +131,40 @@ export function createHelmUI(helm, opt) {
   // profile directly, not through here, so a sketch calls onChange itself there.
   const _changed = () => { if (opt.onChange) opt.onChange(); };
 
+  // ── Collapsible setup ──────────────────────────────────────────────────────
+  // body wraps every control below the title, matching bindUI's contract.
+
+  const canCollapse = !!(opt.title && (opt.collapsible || 'collapsed' in opt));
+  let _collapsed = canCollapse && !!opt.collapsed;
+  const body = document.createElement('div');
+  body.className = 'p5t-body';
+  body.style.cssText = 'display:flex;flex-direction:column;gap:0px;';
+
   // ── Optional title ──────────────────────────────────────────────────────────
 
+  let chevron = null;
   if (opt.title) {
-    const t = createLabel(opt.title);
-    t.style.fontWeight = 'bold';
-    t.style.marginBottom = '6px';
-    container.appendChild(t);
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText =
+      'display:flex;align-items:center;justify-content:space-between;' +
+      'margin-bottom:6px;';
+    const titleLabel = createLabel(opt.title);
+    titleLabel.style.fontWeight = 'bold';
+    titleRow.appendChild(titleLabel);
+
+    if (canCollapse) {
+      chevron = createLabel(_collapsed ? '\u25B6' : '\u25BC');
+      chevron.style.cssText = 'cursor:pointer;user-select:none;margin-left:6px;';
+      titleRow.style.cursor = 'pointer';
+      titleRow.appendChild(chevron);
+      titleRow.addEventListener('click', () => {
+        _collapsed = !_collapsed;
+        _applyCollapse();
+      });
+    }
+    container.appendChild(titleRow);
   }
+  container.appendChild(body);
 
   // ── Per-DOF rows ────────────────────────────────────────────────────────────
   // Each controller is read every tick: { ch, laneBtn, fill }.  The slider is
@@ -191,7 +220,7 @@ export function createHelmUI(helm, opt) {
     row.appendChild(laneBtn);
     row.appendChild(slider);
     row.appendChild(meter);
-    container.appendChild(row);
+    body.appendChild(row);
 
     rows.push({ ch, laneBtn, fill });
   }
@@ -206,7 +235,7 @@ export function createHelmUI(helm, opt) {
   dzSlider.style.flex = '1';
   dzRow.appendChild(dzLabel);
   dzRow.appendChild(dzSlider);
-  container.appendChild(dzRow);
+  body.appendChild(dzRow);
 
   // ── Value-layer conditioning sliders (shown only with an attached filter) ──
   // Built once as deadzone siblings; hidden until helm.filter is non-null.  On
@@ -223,7 +252,7 @@ export function createHelmUI(helm, opt) {
   mcSlider.style.flex = '1';
   mcRow.appendChild(mcLabel);
   mcRow.appendChild(mcSlider);
-  container.appendChild(mcRow);
+  body.appendChild(mcRow);
 
   const betaRow = document.createElement('div');
   betaRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0;';
@@ -235,7 +264,7 @@ export function createHelmUI(helm, opt) {
   betaSlider.style.flex = '1';
   betaRow.appendChild(betaLabel);
   betaRow.appendChild(betaSlider);
-  container.appendChild(betaRow);
+  body.appendChild(betaRow);
 
   // Hidden until a filter attaches; tick() reconciles against helm.filter.
   setVisible(mcRow, false);
@@ -254,12 +283,26 @@ export function createHelmUI(helm, opt) {
     frSel.style.flex = '1';
     frRow.appendChild(frLabel);
     frRow.appendChild(frSel);
-    container.appendChild(frRow);
+    body.appendChild(frRow);
   }
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
   const ui = { el: container };
+
+  function _applyCollapse() {
+    body.style.display = _collapsed ? 'none' : 'flex';
+    if (chevron) chevron.textContent = _collapsed ? '\u25B6' : '\u25BC';
+  }
+
+  Object.defineProperty(ui, 'collapsed', {
+    get() { return _collapsed; },
+    set(v) {
+      if (!canCollapse) return;
+      _collapsed = !!v;
+      _applyCollapse();
+    },
+  });
 
   Object.defineProperty(ui, 'visible', {
     get() { return _vis; },
@@ -315,6 +358,7 @@ export function createHelmUI(helm, opt) {
     container.parentNode && container.parentNode.removeChild(container);
   };
 
+  _applyCollapse();
   mount(container, opt.parent);
   ui.visible = !opt.hidden;
 
