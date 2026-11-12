@@ -154,7 +154,7 @@ export function createUI(schema, opt) {
   const _cells      = {};   // name → the cell wrapping a multi-element control, in a grid
 
   const ui        = {};
-  const container = createContainer('param-ui');
+  const container = createContainer('param-ui', false, opt);
   container.style.left = `${opt.x ?? 0}px`;
   container.style.top  = `${opt.y ?? 0}px`;
   if (opt.color) container.style.color = opt.color;

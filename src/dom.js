@@ -38,14 +38,22 @@ function _el(tag, cls, attrs) {
  * page that owns a palette (a book, a demo) sets the properties on its root.
  * An inline container is a section of a host layout, not a panel, and gets none.
  */
-export function createContainer(cls, inline) {
+export function createContainer(cls, inline, chrome = {}) {
   const c = _el('div', cls || 'ui');
   const pos = inline ? 'static' : 'absolute';
+  const alpha = Math.min(1, Math.max(0, chrome.alpha ?? 0.6));
+  const ground = chrome.ground
+    ? (alpha < 1 ? `color-mix(in srgb, ${chrome.ground} ${alpha * 100}%, transparent)` : chrome.ground)
+    : `color-mix(in srgb, var(--ui-panel-ground, Canvas) ${alpha * 100}%, transparent)`;
+  const frame = chrome.frame === false
+    ? 'none'
+    : `1px solid ${typeof chrome.frame === 'string'
+        ? chrome.frame
+        : 'var(--ui-panel-line, color-mix(in srgb, CanvasText 16%, transparent))'}`;
   const seat = inline ? '' :
-    'background:var(--ui-panel-ground, color-mix(in srgb, Canvas 60%, transparent));' +
-    'border:1px solid var(--ui-panel-line, color-mix(in srgb, CanvasText 16%, transparent));' +
-    'border-radius:var(--ui-panel-radius, 9px);' +
-    'padding:var(--ui-panel-pad, 10px 12px);';
+    `background:${ground};border:${frame};` +
+    `border-radius:${chrome.radius || 'var(--ui-panel-radius, 9px)'};` +
+    `padding:${chrome.pad || 'var(--ui-panel-pad, 10px 12px)'};`;
   c.style.cssText = `position:${pos};display:flex;flex-direction:column;gap:0px;${seat}`;
   return c;
 }

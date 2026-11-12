@@ -118,7 +118,7 @@ export function createHelmUI(helm, opt) {
   const profile = helm.profile;
   const sliderW = opt.width ?? 130;
 
-  const container = createContainer('helm-ui', opt.inline);
+  const container = createContainer('helm-ui', opt.inline, opt);
   if (!opt.inline) {
     container.style.left = `${opt.x ?? 0}px`;
     container.style.top  = `${opt.y ?? 0}px`;

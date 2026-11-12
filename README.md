@@ -75,9 +75,22 @@ nothing still reads in either colour scheme.
 ```
 
 A host that owns a palette sets them on its root once (and again on a theme
-toggle); a figure that wants a different face writes the element's own style, as
-it would for any other element. An **inline** container is a section of a host
-layout, not a panel, and carries none of this.
+toggle). A single panel can override any part of the seat through its options:
+
+```js
+createPanel(schema, {
+  alpha: 0.35,                // the ground's opacity, 0..1 (default 0.6)
+  ground: '#10131a',          // the panel's own ground colour (default: --ui-panel-ground)
+  frame: false,               // no hairline; a CSS colour sets it; default: --ui-panel-line
+  radius: '4px',              // default: --ui-panel-radius, 9px
+  pad: '6px 8px',             // default: --ui-panel-pad, 10px 12px
+})
+```
+
+`alpha` mixes the ground with transparent (`color-mix`), so a figure can make one
+panel lighter without naming the palette. The same five options reach the
+transport and helm panels. An **inline** container is a section of a host layout,
+not a panel, and carries none of this.
 
 ## Parameter binding panel
 

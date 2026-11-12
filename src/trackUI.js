@@ -140,7 +140,7 @@ export function createTrackUI(target, opt) {
   let _bounce = !!(target.bounce || opt.bounce);
   let _depth  = (typeof opt.depth === 'number') ? opt.depth : 0.5;
 
-  const container = createContainer('track-ui');
+  const container = createContainer('track-ui', false, opt);
   container.style.left = `${opt.x ?? 0}px`;
   container.style.top  = `${opt.y ?? 0}px`;
   if (opt.color) container.style.color = opt.color;
