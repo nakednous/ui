@@ -23,11 +23,30 @@ function _el(tag, cls, attrs) {
  * Flex-column container. Absolute-positioned by default (a panel floats over the
  * canvas); pass `inline` to flow it in normal document order instead, for
  * mounting it as a section inside an existing layout.
+ *
+ * A panel (a non-inline container) wears the package's default seat — the page's
+ * ground at 60 %, a hairline, one radius and one padding — expressed through CSS
+ * custom properties so a host can retint it without touching the library:
+ *
+ *   --ui-panel-ground   default color-mix(in srgb, Canvas 60%, transparent)
+ *   --ui-panel-line     default color-mix(in srgb, CanvasText 16%, transparent)
+ *   --ui-panel-radius   default 9px
+ *   --ui-panel-pad      default 10px 12px
+ *
+ * The fallbacks are the browser's theme-aware system colours, so a page that
+ * sets nothing still gets a legible translucent panel in either colour scheme; a
+ * page that owns a palette (a book, a demo) sets the properties on its root.
+ * An inline container is a section of a host layout, not a panel, and gets none.
  */
 export function createContainer(cls, inline) {
   const c = _el('div', cls || 'ui');
   const pos = inline ? 'static' : 'absolute';
-  c.style.cssText = `position:${pos};display:flex;flex-direction:column;gap:0px;`;
+  const seat = inline ? '' :
+    'background:var(--ui-panel-ground, color-mix(in srgb, Canvas 60%, transparent));' +
+    'border:1px solid var(--ui-panel-line, color-mix(in srgb, CanvasText 16%, transparent));' +
+    'border-radius:var(--ui-panel-radius, 9px);' +
+    'padding:var(--ui-panel-pad, 10px 12px);';
+  c.style.cssText = `position:${pos};display:flex;flex-direction:column;gap:0px;${seat}`;
   return c;
 }
 

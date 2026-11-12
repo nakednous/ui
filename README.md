@@ -58,6 +58,27 @@ Dispatch order is `.play` ⇒ track, else `.feed` ⇒ helm, else schema. Schema 
 
 ---
 
+## Panel chrome
+
+A panel — the parameter, transport and helm panels alike, and every non-inline
+container — wears one default seat: the page's ground at 60 %, a hairline border
+in the page's ink, a 9-px radius and a 10 × 12 padding. Nothing about the seat
+knows a palette: it is four CSS custom properties, and their fallbacks are the
+browser's theme-aware system colours (`Canvas`, `CanvasText`), so a page that sets
+nothing still reads in either colour scheme.
+
+```css
+--ui-panel-ground   /* default color-mix(in srgb, Canvas 60%, transparent) */
+--ui-panel-line     /* default color-mix(in srgb, CanvasText 16%, transparent) */
+--ui-panel-radius   /* default 9px */
+--ui-panel-pad      /* default 10px 12px */
+```
+
+A host that owns a palette sets them on its root once (and again on a theme
+toggle); a figure that wants a different face writes the element's own style, as
+it would for any other element. An **inline** container is a section of a host
+layout, not a panel, and carries none of this.
+
 ## Parameter binding panel
 
 Binds named schema keys to DOM controls. Each binding maps a parameter name to a control, and the control to a target sink.
