@@ -62,20 +62,29 @@ Dispatch order is `.play` ⇒ track, else `.feed` ⇒ helm, else schema. Schema 
 
 A panel — the parameter, transport and helm panels alike, and every non-inline
 container — wears one default seat: the page's ground at 60 %, a hairline border
-in the page's ink, a 9-px radius and a 10 × 12 padding. Nothing about the seat
-knows a palette: it is four CSS custom properties, and their fallbacks are the
-browser's theme-aware system colours (`Canvas`, `CanvasText`), so a page that sets
-nothing still reads in either colour scheme.
+in the page's ink, a 9-px radius, an 8 × 10 padding and a 13-px type size.
+Nothing about the seat knows a palette: it is five CSS custom properties, and
+their fallbacks are the browser's theme-aware system colours (`Canvas`,
+`CanvasText`), so a page that sets nothing still reads in either colour scheme.
 
 ```css
 --ui-panel-ground   /* default color-mix(in srgb, Canvas 60%, transparent) */
 --ui-panel-line     /* default color-mix(in srgb, CanvasText 16%, transparent) */
 --ui-panel-radius   /* default 9px */
---ui-panel-pad      /* default 10px 12px */
+--ui-panel-pad      /* default 8px 10px */
+--ui-panel-font     /* default 13px */
 ```
 
-A host that owns a palette sets them on its root once (and again on a theme
-toggle). A single panel can override any part of the seat through its options:
+The type is the panel's own, not the page's prose. A panel floats over an image and
+every word on it is chrome — a title, the name of a slider — so it states a compact
+size instead of inheriting a paragraph's 16 px. 13 px is the step a figure's HUD
+line or readout already takes, and the padding is sized for it. A host that wants
+another step for its whole page sets `--ui-panel-font` on its root; a figure dense
+with controls passes its own through `font`.
+
+A host that owns a palette sets the properties on its root once (and again on a
+theme toggle). A single panel can override any part of the seat through its
+options:
 
 ```js
 createPanel(schema, {
@@ -83,14 +92,16 @@ createPanel(schema, {
   ground: '#10131a',          // the panel's own ground colour (default: --ui-panel-ground)
   frame: false,               // no hairline; a CSS colour sets it; default: --ui-panel-line
   radius: '4px',              // default: --ui-panel-radius, 9px
-  pad: '6px 8px',             // default: --ui-panel-pad, 10px 12px
+  pad: '6px 8px',             // default: --ui-panel-pad, 8px 10px
+  font: '12px',               // default: --ui-panel-font, 13px
 })
 ```
 
 `alpha` mixes the ground with transparent (`color-mix`), so a figure can make one
-panel lighter without naming the palette. The same five options reach the
+panel lighter without naming the palette. The same six options reach the
 transport and helm panels. An **inline** container is a section of a host layout,
-not a panel, and carries none of this.
+not a panel, and carries none of this — it flows in the host's own type unless a
+caller states a `font`.
 
 ## Parameter binding panel
 
@@ -215,6 +226,7 @@ panel.dispose()      // remove from DOM
 | `collapsible` | `false`         | Title row becomes a collapse toggle.     |
 | `collapsed`   | `false`         | Start collapsed (implies collapsible).   |
 | `color`       | —               | Container text color.                    |
+| `font`        | `--ui-panel-font`, 13px | The panel's type size (a CSS length): its title and its labels. |
 | `hidden`      | `false`         | Start hidden.                            |
 | `parent`      | `document.body` | Mount target (`HTMLElement`).            |
 
@@ -325,6 +337,7 @@ track.play({ bounce: true }) // bounce checkbox checked ✓
 | `rateWidth`   | `width`         | Rate slider width override (px).                                     |
 | `depthWidth`  | `width`         | Depth slider width override (px).                                    |
 | `color`       | —               | Container text color.                                                |
+| `font`        | `--ui-panel-font`, 13px | The panel's type size (a CSS length).                       |
 | `hidden`      | `false`         | Start hidden.                                                        |
 | `parent`      | `document.body` | Mount target (`HTMLElement`).                                        |
 
@@ -385,6 +398,7 @@ When the helm carries an input filter (`helm.filter = oneEuro(...)`), the panel 
 | `x` / `y`  | `0`             | Container position (px) — ignored when `inline`.            |
 | `width`    | `130`           | Signed-slider width (px).                                   |
 | `color`    | —               | Container text color (meters inherit it).                   |
+| `font`     | `--ui-panel-font`, 13px | The panel's type size (a CSS length).               |
 | `title`    | —               | Optional bold title row.                                    |
 | `hidden`   | `false`         | Start hidden.                                               |
 | `parent`   | `document.body` | Mount target (`HTMLElement`).                               |

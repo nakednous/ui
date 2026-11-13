@@ -25,18 +25,25 @@ function _el(tag, cls, attrs) {
  * mounting it as a section inside an existing layout.
  *
  * A panel (a non-inline container) wears the package's default seat — the page's
- * ground at 60 %, a hairline, one radius and one padding — expressed through CSS
- * custom properties so a host can retint it without touching the library:
+ * ground at 60 %, a hairline, one radius, one padding and one type size —
+ * expressed through CSS custom properties so a host can retint it without
+ * touching the library:
  *
  *   --ui-panel-ground   default color-mix(in srgb, Canvas 60%, transparent)
  *   --ui-panel-line     default color-mix(in srgb, CanvasText 16%, transparent)
  *   --ui-panel-radius   default 9px
- *   --ui-panel-pad      default 10px 12px
+ *   --ui-panel-pad      default 8px 10px
+ *   --ui-panel-font     default 13px
  *
  * The fallbacks are the browser's theme-aware system colours, so a page that
  * sets nothing still gets a legible translucent panel in either colour scheme; a
  * page that owns a palette (a book, a demo) sets the properties on its root.
- * An inline container is a section of a host layout, not a panel, and gets none.
+ * The type size is a panel's own, not the page's prose: a panel floats over an
+ * image, so it states a compact size (the 13 px a HUD line or a readout takes)
+ * rather than inheriting a paragraph's, and a figure dense with controls states
+ * its own step below that through `font`. An inline container is a section of a
+ * host layout, not a panel, and gets none of this — it flows in the host's own
+ * type unless a caller states one.
  */
 export function createContainer(cls, inline, chrome = {}) {
   const c = _el('div', cls || 'ui');
@@ -50,10 +57,13 @@ export function createContainer(cls, inline, chrome = {}) {
     : `1px solid ${typeof chrome.frame === 'string'
         ? chrome.frame
         : 'var(--ui-panel-line, color-mix(in srgb, CanvasText 16%, transparent))'}`;
-  const seat = inline ? '' :
+  const font = chrome.font
+    ? `font-size:${chrome.font};`
+    : inline ? '' : 'font-size:var(--ui-panel-font, 13px);';
+  const seat = inline ? font :
     `background:${ground};border:${frame};` +
     `border-radius:${chrome.radius || 'var(--ui-panel-radius, 9px)'};` +
-    `padding:${chrome.pad || 'var(--ui-panel-pad, 10px 12px)'};`;
+    `padding:${chrome.pad || 'var(--ui-panel-pad, 8px 10px)'};${font}`;
   c.style.cssText = `position:${pos};display:flex;flex-direction:column;gap:0px;${seat}`;
   return c;
 }

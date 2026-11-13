@@ -104,6 +104,8 @@ const _isT = (ch) => ch.charCodeAt(0) === 84;
  * @param {number}  [opt.y=0]          Container top (px).
  * @param {number}  [opt.width=130]    Signed-slider width (px).
  * @param {string}  [opt.color]        Container text colour (meters inherit it).
+ * @param {string}  [opt.font]         The panel's type size (a CSS length); default
+ *                                     `var(--ui-panel-font, 13px)`.
  * @param {boolean} [opt.inline=false] Flow inline instead of the absolute float.
  * @param {Function}[opt.onChange]     Called after any user edit of the profile.
  * @param {boolean} [opt.hidden=false] Start hidden.

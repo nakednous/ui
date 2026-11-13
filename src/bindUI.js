@@ -133,6 +133,8 @@ function inferType(cfg) {
  *   and a binding's own `span` may take several slots (a wide select under a row of toggles).
  *   A hidden binding leaves the grid, so the rest stay aligned.
  * @param {number}  [opt.columnGap=8]    Horizontal gap between grid cells (px), with `columns` above 1.
+ * @param {string}  [opt.font]           The panel's type size (a CSS length, e.g. '13px'); default
+ *   `var(--ui-panel-font, 13px)`. A figure dense with controls states its own step.
  * @param {string}  [opt.title]          Bold title row.
  * @param {boolean} [opt.collapsible]    Make title row a collapse toggle (requires title).
  * @param {boolean} [opt.collapsed]      Start collapsed (requires collapsible + title).

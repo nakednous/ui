@@ -115,6 +115,8 @@ import {
  * @param {number}  [opt.rateWidth]      Rate slider width (px). Defaults to opt.width.
  * @param {number}  [opt.depthWidth]     Depth slider width (px). Defaults to opt.width.
  * @param {string}  [opt.color]          Text color.
+ * @param {string}  [opt.font]           The panel's type size (a CSS length); default
+ *                                       `var(--ui-panel-font, 13px)`.
  * @param {boolean} [opt.hidden=false]   Start hidden.
  * @param {string}  [opt.title]          Optional title row.
  * @param {boolean} [opt.collapsible]    Make title row a collapse toggle (requires title).
